@@ -425,7 +425,7 @@ export default function Home() {
             <span className={`server-light ${library?.server.running ? 'online' : ''}`} />
             <div><strong>Lavish server</strong><span>{library?.server.running ? 'Running locally' : 'Starts when needed'}</span></div>
           </div>
-          <p>Private to this Mac</p>
+          <p>Private to this machine</p>
         </div>
       </aside>
 
