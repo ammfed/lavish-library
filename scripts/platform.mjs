@@ -33,6 +33,12 @@ export function folderPickerCommand(prompt, { platform = process.platform, looku
   return null;
 }
 
+export function folderPickerError(code, stderr, platform = process.platform) {
+  const message = stderr.trim();
+  const cancelled = code === 0 || !message || (platform === 'darwin' ? message.includes('User canceled') : code === 1);
+  return cancelled ? 'Folder selection cancelled.' : message;
+}
+
 export function launchDetached([command, args]) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { detached: true, stdio: 'ignore' });

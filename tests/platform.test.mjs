@@ -4,7 +4,7 @@ import { chmod, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { after, before, test } from 'node:test';
 import os from 'node:os';
 import path from 'node:path';
-import { fileManagerName, folderPickerCommand, launchDetached, openCommand, resolveLavishBin, revealCommand } from '../scripts/platform.mjs';
+import { fileManagerName, folderPickerCommand, folderPickerError, launchDetached, openCommand, resolveLavishBin, revealCommand } from '../scripts/platform.mjs';
 
 const root = process.cwd();
 const port = 45_000 + (process.pid % 1_000);
@@ -42,6 +42,19 @@ test('picks zenity, then kdialog, then no picker on Linux', () => {
   assert.deepEqual(folderPickerCommand('Pick', { platform: 'linux', lookup: only('zenity', 'kdialog') }), ['zenity', ['--file-selection', '--directory', '--title=Pick']]);
   assert.deepEqual(folderPickerCommand('Pick', { platform: 'linux', lookup: only('kdialog') }), ['kdialog', ['--getexistingdirectory', os.homedir(), '--title', 'Pick']]);
   assert.equal(folderPickerCommand('Pick', { platform: 'linux', lookup: only() }), null);
+});
+
+test('treats a Linux picker exit code 1 as a cancel even with GTK noise on stderr', () => {
+  const gtkNoise = 'Gtk-Message: 10:00:00.000: GtkDialog mapped without a transient parent. This is discouraged.\n';
+  assert.equal(folderPickerError(1, gtkNoise, 'linux'), 'Folder selection cancelled.');
+  assert.equal(folderPickerError(1, '', 'linux'), 'Folder selection cancelled.');
+  assert.equal(folderPickerError(255, 'cannot open display\n', 'linux'), 'cannot open display');
+});
+
+test('keeps macOS picker cancel detection', () => {
+  assert.equal(folderPickerError(1, 'execution error: User canceled. (-128)', 'darwin'), 'Folder selection cancelled.');
+  assert.equal(folderPickerError(1, '', 'darwin'), 'Folder selection cancelled.');
+  assert.equal(folderPickerError(1, 'execution error: Not authorized', 'darwin'), 'execution error: Not authorized');
 });
 
 test('reports a missing launcher instead of crashing', async () => {

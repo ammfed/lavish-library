@@ -5,7 +5,7 @@ import { access, copyFile, cp, mkdir, readFile, readdir, rename, stat, writeFile
 import { createServer } from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { fileManagerName, folderPickerCommand, launchDetached, openCommand, resolveLavishBin, revealCommand } from './platform.mjs';
+import { fileManagerName, folderPickerCommand, folderPickerError, launchDetached, openCommand, resolveLavishBin, revealCommand } from './platform.mjs';
 
 const PORT = Number(process.env.LAVISH_TRACKER_API_PORT || 4318);
 const requestedUiPort = Number(process.env.LAVISH_TRACKER_UI_PORT || 3000);
@@ -866,8 +866,7 @@ function chooseFolder(prompt) {
     child.on('error', (error) => reject(new Error(`Could not open the folder picker: ${error.message}`)));
     child.on('close', (code) => {
       if (code === 0 && output.trim()) return resolve(output.trim());
-      const cancelled = code === 0 || errorOutput.includes('User canceled') || !errorOutput.trim();
-      reject(new Error(cancelled ? 'Folder selection cancelled.' : errorOutput.trim()));
+      reject(new Error(folderPickerError(code, errorOutput)));
     });
   });
 }

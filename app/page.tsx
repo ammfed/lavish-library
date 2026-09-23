@@ -469,7 +469,7 @@ export default function Home() {
             <div><strong>Add a project folder</strong><p>We’ll look inside its <code>.lavish</code> folders. Nothing is uploaded.</p></div>
             <button className="choose-button" onClick={() => void chooseFolder()}><Icon name="folder" /> Choose folder</button>
             <form onSubmit={addManualFolder}>
-              <input value={manualPath} onChange={(event) => setManualPath(event.target.value)} placeholder="Or paste /Users/you/project" required />
+              <input value={manualPath} onChange={(event) => setManualPath(event.target.value)} placeholder={`Or paste ${fileManager === 'Finder' ? '/Users/you/project' : '/home/you/project'}`} required />
               <button type="submit">Add</button>
             </form>
           </section>
