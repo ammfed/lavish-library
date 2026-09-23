@@ -59,6 +59,7 @@ type Library = {
   projects: Project[];
   artifacts: Artifact[];
   server: { running: boolean; url: string };
+  fileManager: string;
   archive: {
     enabled: boolean;
     root: string | null;
@@ -128,6 +129,7 @@ export default function Home() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const trackedSearchRef = useRef('');
+  const fileManager = library?.fileManager ?? 'file manager';
 
   async function loadLibrary(quiet = false) {
     if (!quiet) setLoading(true);
@@ -263,7 +265,7 @@ export default function Home() {
   }
 
   async function revealArtifact(artifact: Artifact) {
-    setNotice(`Revealing “${artifact.title}” in Finder…`);
+    setNotice(`Revealing “${artifact.title}” in ${fileManager}…`);
     try {
       const response = await apiFetch('/artifacts/reveal', {
         method: 'POST',
@@ -456,7 +458,7 @@ export default function Home() {
             {library?.archive?.enabled ? (
               <>
                 <div className="archive-stats"><span><strong>{library.archive.protectedArtifacts}</strong> protected</span><span><strong>{library.archive.totalVersions}</strong> versions</span></div>
-                <div className="archive-panel-actions"><button onClick={() => void revealArchive()}>Show in Finder</button><button onClick={() => void chooseArchiveFolder()}>Change folder</button><button className="quiet-danger" onClick={() => void disableArchive()}>Pause</button></div>
+                <div className="archive-panel-actions"><button onClick={() => void revealArchive()}>Show in {fileManager}</button><button onClick={() => void chooseArchiveFolder()}>Change folder</button><button className="quiet-danger" onClick={() => void disableArchive()}>Pause</button></div>
               </>
             ) : <button className="archive-choose" onClick={() => void chooseArchiveFolder()}><Icon name="folder" /> Choose archive folder</button>}
           </section>
@@ -514,7 +516,7 @@ export default function Home() {
                       <div className="card-actions"><button onClick={() => void openArtifact(artifact)} disabled={!artifact.exists}>{artifact.sessionStatus === 'ended' ? 'Reopen' : 'Open'} <Icon name="arrow" /></button></div>
                     </div>
                     <div className="card-body">
-                      <div className="card-heading"><div><span className={`status status-${artifact.sessionStatus}`}>{label}</span><h2>{artifact.title}</h2></div><button aria-label="Reveal in Finder" title="Reveal in Finder" onClick={() => void revealArtifact(artifact)}><Icon name="more" /></button></div>
+                      <div className="card-heading"><div><span className={`status status-${artifact.sessionStatus}`}>{label}</span><h2>{artifact.title}</h2></div><button aria-label={`Reveal in ${fileManager}`} title={`Reveal in ${fileManager}`} onClick={() => void revealArtifact(artifact)}><Icon name="more" /></button></div>
                       <p className="description">{artifact.description || artifact.relativePath}</p>
                       <div className="card-meta"><span><span className="project-glyph mini">{project?.name.slice(0, 1).toUpperCase() ?? '?'}</span>{project?.name ?? 'Loose artifacts'}</span><span><Icon name="clock" /> {relativeTime(artifact.lastUsedAt ?? artifact.modifiedAt)}</span><span><Icon name="file" /> {formatSize(artifact.size)}</span><button className={`history-chip ${artifact.versionCount ? 'protected' : ''}`} onClick={() => void loadHistory(artifact)}><Icon name="history" /> {library?.archive?.enabled ? artifact.versionCount : 'History'}</button></div>
                     </div>
