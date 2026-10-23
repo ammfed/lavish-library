@@ -30,6 +30,7 @@ test('synthetic library refresh regressions', { skip: process.env.LAVISH_BACKUP_
       projects: [{ id: 'project', name: 'Synthetic project', path: '/synthetic', source: 'added', exists: true, artifactCount: 1 }],
       artifacts: [{ id: 'artifact', projectId: 'project', title: 'Synthetic plan', description, file: '/synthetic/plan.html', relativePath: 'plan.html', modifiedAt: '2026-01-01T00:00:00Z', lastUsedAt: null, size: 100, exists: true, sessionStatus: 'discovered', pendingPrompts: 0, url: null, endedBy: null, sessionMessages: 0, versionCount: protectedLatest ? 1 : 0, lastBackedUpAt: protectedLatest ? '2026-01-01T00:00:00Z' : null, backupError: protectedLatest ? null : 'Synthetic backup failure' }],
       server: { running: false, url: '', logAvailable: true },
+      fileManager: 'Finder',
       archive: { enabled: true, root: '/synthetic/archive', path: '/synthetic/archive', totalVersions: protectedLatest ? 1 : 0, protectedArtifacts: protectedLatest ? 1 : 0, failedArtifacts: protectedLatest ? 0 : 1, unprotectedArtifacts: protectedLatest ? 0 : 1 },
       scannedAt: '2026-01-01T00:00:00Z',
     });

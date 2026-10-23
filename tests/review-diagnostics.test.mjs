@@ -116,14 +116,15 @@ test('reveal log dispatches the fixed configured file and refuses missing, direc
   await fixture(async ({ stateDir }) => {
     const calls = [];
     const launch = async (...args) => { calls.push(args); };
-    await revealServerLog(stateDir, launch);
-    assert.deepEqual(calls, [['/usr/bin/open', ['-R', path.join(stateDir, 'server.log')]]]);
+    await revealServerLog(stateDir, launch, 'darwin');
+    await revealServerLog(stateDir, launch, 'linux');
+    assert.deepEqual(calls, [['/usr/bin/open', ['-R', path.join(stateDir, 'server.log')]], ['xdg-open', [stateDir]]]);
     await rm(path.join(stateDir, 'server.log'));
     await mkdir(path.join(stateDir, 'server.log'));
     assert.equal(await serverLogPath(stateDir), null);
     await rm(path.join(stateDir, 'server.log'), { recursive: true });
     await symlink('state.json', path.join(stateDir, 'server.log'));
     await assert.rejects(revealServerLog(stateDir, launch), /No local server.log/);
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, 2);
   }, { log: true });
 });

@@ -249,7 +249,7 @@ test('synthetic browser covers backup states, refresh notices and slow history',
           assert(await page.eval(() => !!document.querySelector('.version-row.current')), 'refresh recovery dropped the drawer');`);
         await check(`await page.eval(() => { window.refreshNotices.failure = ${JSON.stringify(source)}; });
           await page.wait(() => document.querySelector('.notice')?.textContent === ${JSON.stringify(message)});
-          await page.click('[aria-label="Reveal in Finder"]');
+          await page.click('[aria-label^="Reveal in "]');
           await page.wait(() => document.querySelector('.notice')?.textContent === window.refreshNotices.actionMessage);
           await page.eval(() => { window.refreshNotices.expected = window.refreshNotices.successes[${JSON.stringify(source)}] + 1; window.refreshNotices.failure = null; });
           ${refreshApplied}
