@@ -8,6 +8,7 @@ import path from 'node:path';
 import { createPreviewCache } from './artifact-previews.mjs';
 import { artifactFailures, revisionContext, revealServerLog, serverLogPath } from './review-diagnostics.mjs';
 import { allowedHost, hostAuthority, isLoopbackHost, remoteAccessConfig } from './remote-access.mjs';
+import { fileManagerName, folderPickerCommand, folderPickerError, launchDetached, openCommand, resolveLavishBin, revealCommand } from './platform.mjs';
 
 const remoteAccess = remoteAccessConfig();
 const PORT = remoteAccess.apiPort;
@@ -20,7 +21,7 @@ const CONFIG_DIR = process.env.LAVISH_TRACKER_CONFIG_DIR
   : path.join(os.homedir(), '.lavish-tracker');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 const ANALYTICS_FILE = path.join(CONFIG_DIR, 'analytics.json');
-const LAVISH_BIN = process.env.LAVISH_AXI_BIN || '/opt/homebrew/bin/lavish-axi';
+const LAVISH_BIN = resolveLavishBin();
 const requestedLavishPort = Number(process.env.LAVISH_AXI_PORT || 4387);
 const LAVISH_PORT = Number.isInteger(requestedLavishPort) && requestedLavishPort > 0 && requestedLavishPort <= 65_535
   ? requestedLavishPort
@@ -683,6 +684,7 @@ async function buildLibrary() {
     projects,
     artifacts,
     server: { running, url: LAVISH_ORIGIN, ...(logPath ? { logAvailable: true } : {}) },
+    fileManager: fileManagerName(),
     archive: {
       enabled: Boolean(config.archiveRoot),
       root: config.archiveRoot,
@@ -1190,23 +1192,20 @@ async function addProject(folder) {
   return resolved;
 }
 
-function launchDetached(command, args) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { detached: true, stdio: 'ignore' });
-    child.once('error', reject);
-    child.once('spawn', () => { child.unref(); resolve(); });
-  });
-}
-
 function chooseFolder(prompt) {
   return new Promise((resolve, reject) => {
-    const child = spawn('/usr/bin/osascript', ['-e', `POSIX path of (choose folder with prompt ${JSON.stringify(prompt)})`]);
+    const picker = folderPickerCommand(prompt);
+    if (!picker) return reject(new Error('No folder picker is available. Install zenity or kdialog, or paste the folder path instead.'));
+    const child = spawn(...picker);
     let output = '';
     let errorOutput = '';
     child.stdout.on('data', (chunk) => { output += chunk; });
     child.stderr.on('data', (chunk) => { errorOutput += chunk; });
-    child.once('error', reject);
-    child.on('close', (code) => code === 0 ? resolve(output.trim()) : reject(new Error(errorOutput.includes('User canceled') ? 'Folder selection cancelled.' : errorOutput.trim())));
+    child.on('error', (error) => reject(new Error(`Could not open the folder picker: ${error.message}`)));
+    child.on('close', (code) => {
+      if (code === 0 && (output.trim() || process.platform === 'darwin')) return resolve(output.trim());
+      reject(new Error(folderPickerError(code, errorOutput)));
+    });
   });
 }
 
@@ -1329,7 +1328,7 @@ const server = createServer(async (req, res) => {
       const config = await readConfig();
       const folder = archiveHome(config);
       if (!folder || !(await exists(folder))) throw new Error('No archive folder has been created yet.');
-      await launchDetached('/usr/bin/open', [folder]);
+      await launchDetached(...openCommand(folder));
       return json(res, 202, { ok: true }, origin);
     }
     if (req.method === 'POST' && url.pathname === '/api/server/reveal-log') {
@@ -1357,14 +1356,14 @@ const server = createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/artifacts/reveal') {
       const input = await body(req);
       const artifact = await artifactForFile(input.file);
-      await launchDetached('/usr/bin/open', ['-R', artifact.file]);
-      await recordEvent('reveal', { artifactId: artifact.id, label: 'Revealed in Finder' });
+      await launchDetached(...revealCommand(artifact.file));
+      await recordEvent('reveal', { artifactId: artifact.id, label: `Revealed in ${fileManagerName()}` });
       return json(res, 202, { ok: true }, origin);
     }
     if (req.method === 'POST' && url.pathname === '/api/versions/open') {
       const input = await body(req);
       const resolved = await resolveVersion(input.file, input.versionId);
-      await launchDetached('/usr/bin/open', [resolved.archivedFile]);
+      await launchDetached(...openCommand(resolved.archivedFile));
       await recordEvent('version_open', { artifactId: resolved.artifact.id, label: 'Archived version opened', detail: resolved.version.createdAt });
       return json(res, 202, { ok: true }, origin);
     }

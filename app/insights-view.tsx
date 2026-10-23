@@ -164,7 +164,7 @@ export default function InsightsView({ mode }: { mode: 'observatory' | 'review' 
     await load(true);
   }
 
-  if (loading && !insights) return <div className="insights-loading"><span>✦</span><strong>Reading the signals already on this Mac…</strong><p>Version history, sessions, projects, and recent work are being reconciled.</p></div>;
+  if (loading && !insights) return <div className="insights-loading"><span>✦</span><strong>Reading the signals already on this machine…</strong><p>Version history, sessions, projects, and recent work are being reconciled.</p></div>;
   if (error && !insights) return <div className="insights-error"><strong>Insights could not be prepared</strong><p>{error}</p><button onClick={() => void load()}>Try again</button></div>;
   if (!insights) return null;
 

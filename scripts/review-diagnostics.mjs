@@ -1,5 +1,6 @@
 import { lstat } from 'node:fs/promises';
 import path from 'node:path';
+import { revealCommand } from './platform.mjs';
 
 // Lavish 0.1.73's persisted fatal diagnostics. Load tokens/revisions identify
 // browser requests; they are not evidence that an artifact rendered successfully.
@@ -60,8 +61,8 @@ export async function serverLogPath(stateDirectory) {
   return details?.isFile() ? file : null;
 }
 
-export async function revealServerLog(stateDirectory, launch) {
+export async function revealServerLog(stateDirectory, launch, platform = process.platform) {
   const file = await serverLogPath(stateDirectory);
   if (!file) throw new Error('No local server.log is available yet.');
-  await launch('/usr/bin/open', ['-R', file]);
+  await launch(...revealCommand(file, platform));
 }
