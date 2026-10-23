@@ -1,6 +1,6 @@
 # Lavish Library
 
-A private, local-first browser library for finding and reopening Lavish review surfaces on a Mac.
+A private, local-first browser library for finding and reopening Lavish review surfaces on macOS or Linux.
 
 ## What it does
 
@@ -9,11 +9,11 @@ A private, local-first browser library for finding and reopening Lavish review s
 - Finds additional HTML artifacts in project `.lavish` folders (generated `.export.html` and `-portable.html` copies are omitted unless opened in Lavish)
 - Shows session state, server availability, last-used time, edit time, and file size
 - Explains Lavish's recorded artifact/local-asset failures separately from server availability
-- Shows agent-declared revision context on saved artifact timelines and reveals local `server.log` in Finder when available
+- Shows agent-declared revision context on saved artifact timelines and reveals local `server.log` in Finder (or your file manager on Linux) when available
 - Searches, filters, sorts, and switches between grid and list views
 - Opens or reopens an artifact with `lavish-axi`
-- Reveals an artifact in Finder
-- Adds project folders with a native macOS folder picker or a pasted path
+- Reveals an artifact in Finder, or in your file manager on Linux
+- Adds project folders with a native folder picker (macOS, or zenity/kdialog on Linux) or a pasted path
 - Creates content-addressed snapshots whenever a watched Lavish changes
 - Copies each HTML file and its linked local assets into a chosen archive folder
 - Shows an artifact timeline with size/line deltas, archived previews, and safe restore
@@ -23,7 +23,7 @@ A private, local-first browser library for finding and reopening Lavish review s
 - Provides a Signal Observatory, periodic Lavish Review, dormant gems, template candidates, and an explainable recommendation queue
 - Lets you tune on-demand, weekly, monthly, and contextual reflection prompts
 
-All project paths and preferences stay on the Mac in `~/.lavish-tracker/config.json`. Insights and feedback stay in `~/.lavish-tracker/analytics.json`. Nothing is uploaded by the app, and foreground-time tracking is deliberately excluded.
+All project paths and preferences stay on your machine in `~/.lavish-tracker/config.json`. Insights and feedback stay in `~/.lavish-tracker/analytics.json`. Nothing is uploaded by the app, and foreground-time tracking is deliberately excluded.
 
 ## Insights
 
@@ -75,7 +75,7 @@ npm install
 npm run dev
 ```
 
-The app expects Lavish at `/opt/homebrew/bin/lavish-axi` by default. If `command -v lavish-axi` reports another location, pass it when starting the app:
+The app finds Lavish from `LAVISH_AXI_BIN` when set, then from `command -v lavish-axi` on your `PATH`, then falls back to `/opt/homebrew/bin/lavish-axi`. To point it at a specific install:
 
 ```bash
 LAVISH_AXI_BIN="$(command -v lavish-axi)" npm run dev
@@ -99,6 +99,19 @@ To use another local UI port, set it explicitly for both services:
 
 ```bash
 LAVISH_TRACKER_UI_PORT=3007 npm run dev
+```
+
+## Linux
+
+The app also runs on Linux. The macOS integrations switch automatically:
+
+- **Reveal** and **Show in file manager** open the containing folder with `xdg-open`. Archived versions also open with `xdg-open`.
+- **Choose folder** uses `zenity` when installed, otherwise `kdialog`. If neither is installed, the app says so and you can paste the folder path into the **Add a project folder** panel instead. The archive folder picker needs one of them.
+
+On Debian or Ubuntu, install the helpers with:
+
+```bash
+sudo apt install xdg-utils zenity
 ```
 
 ## Production-style local run
@@ -129,7 +142,7 @@ Configure the HTTPS front to forward the UI port to the app and its separate com
 
 Binding to a non-loopback address without an explicit origin allowlist is refused at startup. Private-network reachability and the explicit origin allowlist are the trust boundary: there are no accounts or identity authentication. Any peer that can reach the companion and supply an allowed origin can obtain a token and read or modify the owner's discovered library, including restoring archived files. Use private-network access controls to limit reachable peers and HTTPS to protect data in transit. Non-allowlisted origins are rejected. In remote mode, every API read and mutation requires the per-start token even without browser headers; session bootstrap requires an allowed origin, and CORS preflight does not require a token. Header-free command-line clients connected over loopback can omit the token only when the companion is also bound to loopback.
 
-Files, archives, and native actions remain on the host Mac. Folder pickers, Finder reveals, and opening live or archived reviews execute there. Pasted project paths refer to folders on that Mac. This option exposes the library UI and companion; the Lavish review server retains its separate local configuration.
+Files, archives, and native actions remain on the host machine. Folder pickers, file manager reveals, and opening live or archived reviews execute there. Pasted project paths refer to folders on that machine. This option exposes the library UI and companion; the Lavish review server retains its separate local configuration.
 
 ## License
 

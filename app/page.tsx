@@ -66,6 +66,7 @@ type Library = {
   projects: Project[];
   artifacts: Artifact[];
   server: { running: boolean; url: string; logAvailable?: boolean };
+  fileManager: string;
   archive: {
     enabled: boolean;
     root: string | null;
@@ -142,6 +143,7 @@ export default function Home() {
   const libraryRequestRef = useRef<Promise<Library | undefined> | null>(null);
   const historyRefreshRef = useRef<(() => Promise<void>) | null>(null);
   const historyFile = historyArtifact?.file;
+  const fileManager = library?.fileManager ?? 'file manager';
 
   const loadLibrary = useCallback(async (quiet = false, signal?: AbortSignal): Promise<Library | undefined> => {
     if (!quiet) setLoading(true);
@@ -346,7 +348,7 @@ export default function Home() {
   }
 
   async function revealArtifact(artifact: Artifact) {
-    setNotice(`Revealing “${artifact.title}” in Finder…`);
+    setNotice(`Revealing “${artifact.title}” in ${fileManager}…`);
     try {
       const response = await apiFetch('/artifacts/reveal', {
         method: 'POST',
@@ -366,7 +368,7 @@ export default function Home() {
       const response = await apiFetch('/server/reveal-log', { method: 'POST' });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not reveal server.log.');
-      setNotice('Revealed server.log in Finder.');
+      setNotice(`Revealed server.log in ${fileManager}.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Could not reveal server.log.');
     }
@@ -530,7 +532,7 @@ export default function Home() {
             <span className={`server-light ${library?.server.running ? 'online' : ''}`} />
             <div><strong>Lavish server</strong><span>{library?.server.running ? 'Running locally' : 'Starts when needed'}</span>{library?.server.logAvailable && <button className="reveal-log" onClick={() => void revealLog()}>Reveal server.log</button>}</div>
           </div>
-          <p>Stored on this Mac</p>
+          <p>Stored on this machine</p>
         </div>
       </aside>
 
@@ -563,7 +565,7 @@ export default function Home() {
             {library?.archive?.enabled ? (
               <>
                 <div className="archive-stats" aria-live="polite"><span><strong>{library.archive.protectedArtifacts}</strong> latest protected</span><span><strong>{library.archive.unprotectedArtifacts}</strong> unprotected</span><span className={library.archive.failedArtifacts ? 'failed' : ''}><strong>{library.archive.failedArtifacts}</strong> failed</span><span><strong>{library.archive.totalVersions}</strong> versions</span></div>
-                <div className="archive-panel-actions"><button onClick={() => void revealArchive()}>Show in Finder</button><button onClick={() => void chooseArchiveFolder()}>Change folder</button><button className="quiet-danger" onClick={() => void disableArchive()}>Pause</button></div>
+                <div className="archive-panel-actions"><button onClick={() => void revealArchive()}>Show in {fileManager}</button><button onClick={() => void chooseArchiveFolder()}>Change folder</button><button className="quiet-danger" onClick={() => void disableArchive()}>Pause</button></div>
               </>
             ) : <button className="archive-choose" onClick={() => void chooseArchiveFolder()}><Icon name="folder" /> Choose archive folder</button>}
           </section>
@@ -574,7 +576,7 @@ export default function Home() {
             <div><strong>Add a project folder</strong><p>We’ll look inside its <code>.lavish</code> folders. Nothing is uploaded.</p></div>
             <button className="choose-button" onClick={() => void chooseFolder()}><Icon name="folder" /> Choose folder</button>
             <form onSubmit={addManualFolder}>
-              <input value={manualPath} onChange={(event) => setManualPath(event.target.value)} placeholder="Or paste /Users/you/project" required />
+              <input value={manualPath} onChange={(event) => setManualPath(event.target.value)} placeholder={`Or paste ${fileManager === 'Finder' ? '/Users/you/project' : '/srv/project'}`} required />
               <button type="submit">Add</button>
             </form>
           </section>
@@ -636,7 +638,7 @@ export default function Home() {
                       <div className="card-actions"><button onClick={() => void openArtifact(artifact)} disabled={!artifact.exists}>{artifact.sessionStatus === 'ended' ? 'Reopen' : 'Open'} <Icon name="arrow" /></button></div>
                     </div>
                     <div className="card-body">
-                      <div className="card-heading"><div><span className={`status status-${artifact.sessionStatus}`}>{label}</span>{!!failures.length && <span className="status status-failed">Review failed</span>}<h2>{artifact.title}</h2></div><button aria-label="Reveal in Finder" title="Reveal in Finder" onClick={() => void revealArtifact(artifact)}><Icon name="more" /></button></div>
+                      <div className="card-heading"><div><span className={`status status-${artifact.sessionStatus}`}>{label}</span>{!!failures.length && <span className="status status-failed">Review failed</span>}<h2>{artifact.title}</h2></div><button aria-label={`Reveal in ${fileManager}`} title={`Reveal in ${fileManager}`} onClick={() => void revealArtifact(artifact)}><Icon name="more" /></button></div>
                       {!!failures.length && <details className="artifact-warning"><summary>Lavish reported a review failure</summary><p>{library?.server.running ? 'The server is running, but this artifact or a local asset could not load.' : 'This artifact or a local asset could not load in Lavish.'} This is the last recorded failure; server health does not confirm a successful render.</p><ul>{failures.map((failure, index) => <li key={index}><strong>{failure.kind === 'artifact-unavailable' ? 'Artifact unavailable' : 'Local asset unavailable'}</strong>{failure.detail && <span>{failure.detail}</span>}</li>)}</ul></details>}
                       <p className="description">{artifact.description || artifact.relativePath}</p>
                       <div className="card-meta"><span><span className="project-glyph mini">{project?.name.slice(0, 1).toUpperCase() ?? '?'}</span>{project?.name ?? 'Loose artifacts'}</span><span><Icon name="clock" /> {relativeTime(artifact.lastUsedAt ?? artifact.modifiedAt)}</span><span><Icon name="file" /> {formatSize(artifact.size)}</span><button className={`history-chip ${isLatestProtected(artifact, Boolean(library?.archive?.enabled)) ? 'protected' : ''}`} onClick={() => selectHistory(artifact)}><Icon name="history" /> {library?.archive?.enabled ? artifact.versionCount : 'History'}</button></div>
